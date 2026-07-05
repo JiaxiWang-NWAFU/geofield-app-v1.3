@@ -248,11 +248,20 @@ const QuadratPage: React.FC = () => {
             {quadratPhotos.length === 0 ? (
               <p className="text-center text-gray-400 text-xs py-4">暂无照片</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                 {quadratPhotos.map((photo) => (
                   <div key={photo.id} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
                     <img src={getPhotoUrl(photo.file_path)} alt={photo.name}
                       className="w-full h-full object-cover cursor-pointer" onClick={() => setViewingPhoto(getPhotoUrl(photo.file_path))} />
+                    <button
+                      onClick={() => {
+                        db.deleteQuadratPhoto(photo.id).then(async () => {
+                          await loadQuadratPhotos();
+                          showToast('照片已删除');
+                        }).catch(() => showToast('删除失败'));
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center text-xs z-10"
+                    >✕</button>
                   </div>
                 ))}
               </div>
