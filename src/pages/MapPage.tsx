@@ -20,6 +20,10 @@ import {
 } from '../types';
 import { showToast } from '../utils/helpers';
 
+// 跨导航保留地图实例，防止切换页面白屏
+let savedMapContainer: HTMLDivElement | null = null;
+let savedMapInstance: MapLibreMap | null = null;
+
 const MapPage: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -58,8 +62,14 @@ const MapPage: React.FC = () => {
   useEffect(() => { currentSurveyRef.current = currentSurvey; }, [currentSurvey]);
   useEffect(() => { poisRef.current = pois; }, [pois]);
 
-  // Initialize map
+  // Initialize map (跨导航复用，防止白屏)
   useEffect(() => {
+    if (savedMapInstance && savedMapContainer) {
+      mapContainer.current?.appendChild(savedMapContainer);
+      map.current = savedMapInstance;
+      setTimeout(() => savedMapInstance!.resize(), 50);
+      return;
+    }
     if (!mapContainer.current || map.current) return;
     const config = getBasemapConfig(basemapType);
 
@@ -143,7 +153,17 @@ const MapPage: React.FC = () => {
     });
 
     map.current = mapInstance;
-    return () => { clearLongPress(); markersRef.current.forEach(m => m.remove()); mapInstance.remove(); map.current = null; };
+        return () => {
+      clearLongPress();
+      markersRef.current.forEach(m => m.remove());
+      // 不销毁地图，保留DOM和实例供下次复用
+      savedMapInstance = mapInstance;
+      savedMapContainer = mapContainer.current;
+      if (savedMapContainer?.parentNode) {
+        savedMapContainer.parentNode.removeChild(savedMapContainer);
+      }
+      map.current = null;
+    };
   }, []);
 
   const clearLongPress = () => {
